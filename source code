@@ -1,0 +1,116 @@
+// CODE FOR IOS APP
+
+import UIKit
+import SystemConfiguration.CaptiveNetwork
+import CoreTelephony
+
+class DeviceInfoViewController: UIViewController {
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        let modelName = UIDevice.current.model
+        let modelNumber = UIDevice.current.modelIdentifier
+        
+        let iOSVersion = UIDevice.current.systemVersion
+        
+        let serialNumber = UIDevice.current.identifierForVendor?.uuidString ?? "Unavailable"
+        
+        let totalSpace = UIDevice.current.totalDiskSpaceInBytes
+        let totalSpaceInGB = ByteCountFormatter.string(fromByteCount: totalSpace, countStyle: .file)
+        
+        let battery = UIDevice.current.battery
+        let batteryHealth = battery.batteryHealth
+        let batteryLevel = battery.batteryLevel
+        
+        let camera = UIDevice.current.camera
+        let cameraMegaPixel = camera.megapixels
+        let cameraAperture = camera.aperture
+        
+        let processor = UIDevice.current.processor
+        let cpuInformation = processor.cpuInformation
+        
+        let gpu = UIDevice.current.gpu
+        let gpuInformation = gpu.gpuInformation
+        
+        let imeiNumber = getIMEINumber()
+        
+        print("Model Name: \(modelName)")
+        print("Model Number: \(modelNumber)")
+        print("iOS Version: \(iOSVersion)")
+        print("Serial Number: \(serialNumber)")
+        print("Storage: \(totalSpaceInGB)")
+        print("Battery Health: \(batteryHealth)")
+        print("Battery Level: \(batteryLevel)")
+        print("Camera MegaPixel: \(cameraMegaPixel)")
+        print("Camera Aperture: \(cameraAperture)")
+        print("Processor: \(cpuInformation)")
+        print("GPU: \(gpuInformation)")
+        print("IMEI: \(imeiNumber)")
+    }
+    
+    func getIMEINumber() -> String {
+        var imeiNumber = "Unavailable"
+        
+        if let currentNetworkInfo = CTTelephonyNetworkInfo().subscriberCellularProvider {
+            if let imei = currentNetworkInfo.identifier {
+                imeiNumber = imei
+            }
+        }
+        
+        return imeiNumber
+    }
+}
+
+extension UIDevice {
+    
+    var modelIdentifier: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machineMirror = Mirror(reflecting: systemInfo.machine)
+        let identifier = machineMirror.children.reduce("") { identifier, element in
+            guard let value = element.value as? Int8, value != 0 else { return identifier }
+            return identifier + String(UnicodeScalar(UInt8(value)))
+        }
+        return identifier
+    }
+    
+    var totalDiskSpaceInBytes: Int64 {
+        guard let systemAttributes = try? FileManager.default.attributesOfFileSystem(forPath: NSHomeDirectory() as String),
+              let space = systemAttributes[FileAttributeKey.systemSize] as? NSNumber else {
+            return 0
+        }
+        return space.int64Value
+    }
+    
+    var battery: Battery {
+        return Battery()
+    }
+    
+    var camera: Camera {
+        return Camera()
+    }
+    
+    var processor: Processor {
+        return Processor()
+    }
+    
+    var gpu: GPU {
+        return GPU()
+    }
+}
+
+struct Battery {
+    var batteryHealth: String {
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        return UIDevice.current.batteryState == .unknown ? "Unknown" : "\(UIDevice.current.batteryState)"
+    }
+    
+    var batteryLevel: Float {
+        return UIDevice.current.batteryLevel
+    }
+}
+
+struct Camera {
+    var megapixels: Int {
+        // Retrieve camera
